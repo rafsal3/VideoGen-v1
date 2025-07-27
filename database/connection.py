@@ -1,0 +1,14 @@
+import motor.motor_asyncio
+from decouple import config
+
+MONGODB_URL = config("MONGODB_URL")
+DATABASE_NAME = config("DATABASE_NAME")
+
+client = motor.motor_asyncio.AsyncIOMotorClient(MONGODB_URL)
+database = client[DATABASE_NAME]
+
+# Collections
+user_collection = database.get_collection("users")
+template_collection = database.get_collection("templates")
+saved_templates_collection = database.get_collection("saved_templates")
+project_collection = database.get_collection("projects")

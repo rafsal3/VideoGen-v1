@@ -1,0 +1,15 @@
+
+# write gitignore content here
+# Ignore node_modules directory
+node_modules/
+# Ignore log files
+*.log
+# Ignore environment variable files
+# this is a python fastapi backend
+.env
+# Ignore Python bytecode files
+__pycache__/
+# Ignore Python virtual environment directories
+env/
+# Ignore coverage reports
+*/__pycache__/

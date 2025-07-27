@@ -1,0 +1,482 @@
+{
+	"info": {
+		"_postman_id": "video-template-api-collection",
+		"name": "Video Template Platform API",
+		"description": "Complete API collection for testing the Video Template Platform backend",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "General Endpoints",
+			"item": [
+				{
+					"name": "Root Endpoint",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/",
+							"host": ["{{base_url}}"],
+							"path": [""]
+						}
+					}
+				},
+				{
+					"name": "Health Check",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/health",
+							"host": ["{{base_url}}"],
+							"path": ["health"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "Debug Endpoints",
+			"item": [
+				{
+					"name": "Get Template Status",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/debug/template-status",
+							"host": ["{{base_url}}"],
+							"path": ["debug", "template-status"]
+						}
+					}
+				},
+				{
+					"name": "Activate Templates",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/debug/activate-templates",
+							"host": ["{{base_url}}"],
+							"path": ["debug", "activate-templates"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "Authentication",
+			"item": [
+				{
+					"name": "Register User",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"username\": \"testuser\",\n  \"email\": \"testuser@example.com\",\n  \"password\": \"testpassword123\",\n  \"full_name\": \"Test User\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/auth/register",
+							"host": ["{{base_url}}"],
+							"path": ["auth", "register"]
+						}
+					}
+				},
+				{
+					"name": "Login User",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    const response = pm.response.json();",
+									"    pm.environment.set('access_token', response.access_token);",
+									"    console.log('Token saved:', response.access_token);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/x-www-form-urlencoded"
+							}
+						],
+						"body": {
+							"mode": "urlencoded",
+							"urlencoded": [
+								{
+									"key": "username",
+									"value": "testuser",
+									"type": "text"
+								},
+								{
+									"key": "password",
+									"value": "testpassword123",
+									"type": "text"
+								}
+							]
+						},
+						"url": {
+							"raw": "{{base_url}}/auth/login",
+							"host": ["{{base_url}}"],
+							"path": ["auth", "login"]
+						}
+					}
+				},
+				{
+					"name": "Get Current User",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/auth/me",
+							"host": ["{{base_url}}"],
+							"path": ["auth", "me"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "Templates",
+			"item": [
+				{
+					"name": "Get All Templates",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}",
+								"disabled": true
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/templates/",
+							"host": ["{{base_url}}"],
+							"path": ["templates", ""]
+						}
+					}
+				},
+				{
+					"name": "Get Template Categories",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/templates/categories",
+							"host": ["{{base_url}}"],
+							"path": ["templates", "categories"]
+						}
+					}
+				},
+				{
+					"name": "Get Templates by Category",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}",
+								"disabled": true
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/templates/category/News",
+							"host": ["{{base_url}}"],
+							"path": ["templates", "category", "News"]
+						}
+					}
+				},
+				{
+					"name": "Get Template by ID",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}",
+								"disabled": true
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/templates/tmpl-newspaper",
+							"host": ["{{base_url}}"],
+							"path": ["templates", "tmpl-newspaper"]
+						}
+					}
+				},
+				{
+					"name": "Save Template",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/templates/tmpl-newspaper/save",
+							"host": ["{{base_url}}"],
+							"path": ["templates", "tmpl-newspaper", "save"]
+						}
+					}
+				},
+				{
+					"name": "Unsave Template",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/templates/tmpl-newspaper/unsave",
+							"host": ["{{base_url}}"],
+							"path": ["templates", "tmpl-newspaper", "unsave"]
+						}
+					}
+				},
+				{
+					"name": "Get Saved Templates",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/templates/saved/my-templates",
+							"host": ["{{base_url}}"],
+							"path": ["templates", "saved", "my-templates"]
+						}
+					}
+				},
+				{
+					"name": "Search Templates",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}",
+								"disabled": true
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/templates/search/news",
+							"host": ["{{base_url}}"],
+							"path": ["templates", "search", "news"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "Projects",
+			"item": [
+				{
+					"name": "Create Project",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    const response = pm.response.json();",
+									"    pm.environment.set('project_id', response.project_id);",
+									"    console.log('Project created with ID:', response.project_id);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"template_id\": \"tmpl-newspaper\",\n  \"name\": \"My Breaking News Video\",\n  \"description\": \"A breaking news video about local events\",\n  \"parameters\": {\n    \"headline\": \"Breaking: Major Event in City\",\n    \"subheadline\": \"Local authorities respond to emergency situation\",\n    \"image_url\": \"https://example.com/news-image.jpg\",\n    \"theme_color\": \"#FF0000\",\n    \"reporter_name\": \"John Smith\"\n  },\n  \"render_quality\": \"1080p\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/projects/",
+							"host": ["{{base_url}}"],
+							"path": ["projects", ""]
+						}
+					}
+				},
+				{
+					"name": "Get User Projects",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/projects/",
+							"host": ["{{base_url}}"],
+							"path": ["projects", ""]
+						}
+					}
+				},
+				{
+					"name": "Get Project by ID",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/projects/{{project_id}}",
+							"host": ["{{base_url}}"],
+							"path": ["projects", "{{project_id}}"]
+						}
+					}
+				},
+				{
+					"name": "Update Project",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"Updated Breaking News Video\",\n  \"description\": \"Updated description\",\n  \"parameters\": {\n    \"headline\": \"Updated: Major Event in City\",\n    \"subheadline\": \"Updated subheadline\",\n    \"image_url\": \"https://example.com/updated-image.jpg\",\n    \"theme_color\": \"#FF0000\",\n    \"reporter_name\": \"John Smith\"\n  },\n  \"render_quality\": \"4k\",\n  \"is_public\": true\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/projects/{{project_id}}",
+							"host": ["{{base_url}}"],
+							"path": ["projects", "{{project_id}}"]
+						}
+					}
+				},
+				{
+					"name": "Render Project",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/projects/{{project_id}}/render",
+							"host": ["{{base_url}}"],
+							"path": ["projects", "{{project_id}}", "render"]
+						}
+					}
+				},
+				{
+					"name": "Get Render Status",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/projects/{{project_id}}/status",
+							"host": ["{{base_url}}"],
+							"path": ["projects", "{{project_id}}", "status"]
+						}
+					}
+				},
+				{
+					"name": "Delete Project",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/projects/{{project_id}}",
+							"host": ["{{base_url}}"],
+							"path": ["projects", "{{project_id}}"]
+						}
+					}
+				},
+				{
+					"name": "Get Public Projects",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/projects/public/showcase",
+							"host": ["{{base_url}}"],
+							"path": ["projects", "public", "showcase"]
+						}
+					}
+				}
+			]
+		}
+	],
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "http://localhost:8000",
+			"type": "string"
+		},
+		{
+			"key": "access_token",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "project_id",
+			"value": "",
+			"type": "string"
+		}
+	]
+} 
