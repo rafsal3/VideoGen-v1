@@ -9,6 +9,7 @@ from services.render_engine import RenderEngine
 from datetime import datetime
 from bson import ObjectId
 import uuid
+import asyncio
 
 router = APIRouter()
 
@@ -132,20 +133,23 @@ async def delete_project(project_id: str, current_user: User = Depends(get_curre
     return {"message": "Project deleted successfully"}
 
 async def process_render_job(project_id: str, user_id: str):
-    """Background task to process render job"""
+    """Background task to process render job with 15-second delay"""
     try:
-        # Update status to processing
+        # Update status to rendering/processing
         await project_collection.update_one(
             {"project_id": project_id},
             {
                 "$set": {
-                    "status": ProjectStatus.PROCESSING,
+                    "status": "rendering",  # Make sure this matches your frontend status check
                     "render_started_at": datetime.utcnow()
                 }
             }
         )
         
-        # For development, use mock render
+        # Add 15-second delay to simulate rendering time
+        await asyncio.sleep(15)
+        
+        # For development, use mock render (this should be instant after the delay)
         render_result = await RenderEngine.mock_render_job(project_id)
         
         if render_result["success"]:
@@ -154,7 +158,7 @@ async def process_render_job(project_id: str, user_id: str):
                 {"project_id": project_id},
                 {
                     "$set": {
-                        "status": ProjectStatus.COMPLETED,
+                        "status": "completed",  # Make sure this matches your frontend status check
                         "video_url": render_result["video_url"],
                         "thumbnail_url": render_result["thumbnail_url"],
                         "duration_seconds": render_result["duration_seconds"],
@@ -169,7 +173,7 @@ async def process_render_job(project_id: str, user_id: str):
                 {"project_id": project_id},
                 {
                     "$set": {
-                        "status": ProjectStatus.FAILED,
+                        "status": "failed",
                         "render_completed_at": datetime.utcnow()
                     }
                 }
@@ -181,12 +185,11 @@ async def process_render_job(project_id: str, user_id: str):
             {"project_id": project_id},
             {
                 "$set": {
-                    "status": ProjectStatus.FAILED,
+                    "status": "failed",
                     "render_completed_at": datetime.utcnow()
                 }
             }
         )
-
 @router.post("/{project_id}/render", response_model=dict)
 async def render_project(
     project_id: str,
@@ -206,7 +209,7 @@ async def render_project(
             detail="Project not found"
         )
     
-    if project["status"] == ProjectStatus.PROCESSING:
+    if project["status"] == "rendering":  # Check for rendering status
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Project is already being processed"
@@ -218,7 +221,7 @@ async def render_project(
     return {
         "message": "Render job started",
         "project_id": project_id,
-        "status": "processing"
+        "status": "rendering"  # Return rendering status
     }
 
 @router.get("/{project_id}/status", response_model=dict)

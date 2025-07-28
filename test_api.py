@@ -253,7 +253,7 @@ class APITester:
             
             # Wait a bit for render to process
             print("\nWaiting 3 seconds for render to process...")
-            time.sleep(3)
+            time.sleep(15)
             
             results.append(("Get Render Status", self.test_get_render_status(project_id)))
         else:
