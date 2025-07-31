@@ -6,6 +6,10 @@ import os
 MONGODB_URL = os.getenv("MONGODB_URL")
 DATABASE_NAME = os.getenv("DATABASE_NAME")
 
+print("DEBUG MONGO_URL:", os.getenv("MONGODB_URL"))
+print("DEBUG DB_NAME:", os.getenv("DATABASE_NAME"))
+
+
 # Use certifi to fix SSL certificate verification
 client = motor.motor_asyncio.AsyncIOMotorClient(
     MONGODB_URL,
