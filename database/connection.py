@@ -1,9 +1,10 @@
 import motor.motor_asyncio
-from decouple import config
+# from decouple import config
 import certifi
+import os
 
-MONGODB_URL = config("MONGODB_URL")
-DATABASE_NAME = config("DATABASE_NAME")
+MONGODB_URL = os.getenv("MONGODB_URL")
+DATABASE_NAME = os.getenv("DATABASE_NAME")
 
 # Use certifi to fix SSL certificate verification
 client = motor.motor_asyncio.AsyncIOMotorClient(
