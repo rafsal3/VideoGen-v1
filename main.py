@@ -1,3 +1,5 @@
+# standard backend 
+
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from routes import auth, templates, projects
@@ -173,6 +175,30 @@ async def startup_event():
                 "is_active": True,
                 "render_engine": "wedding_engine",
                 "tags": ["wedding", "romantic", "elegant", "celebration", "love"]
+            },
+            {
+                "template_id": "text-reveal",
+                "name": "Simple Text Reveal",
+                "description": "A simple and clean text reveal animation.",
+                "category": "Utility",
+                "parameters_schema": {
+                    "text": {"type": "string", "required": True, "default": "Hello, Rafsal!"},
+                    "speed": {"type": "number", "required": False, "default": 0.1},
+                    "font": {"type": "string", "required": False, "default": "Arial"},
+                    "font_size": {"type": "number", "required": False, "default": 48},
+                    "font_color": {"type": "color", "required": True, "default": "#FF0000"},
+                    "background_color": {"type": "color", "required": True, "default": "#FFFFFF"},
+                    "duration": {"type": "number", "required": False, "default": 5.0}
+                },
+                "preview_url": "https://example.com/preview-text-reveal.mp4",
+                "thumbnail_url": "https://picsum.photos/seed/text-reveal-1/1920/1080",
+                "duration_seconds": 5,
+                "resolution": "1920x1080",
+                "created_at": datetime.utcnow(),
+                "is_premium": False,
+                "is_active": True,
+                "render_engine": "text_reveal",
+                "tags": ["text", "reveal", "simple", "animation"]
             }
         ]
         

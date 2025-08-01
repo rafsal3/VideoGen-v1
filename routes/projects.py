@@ -10,6 +10,11 @@ from datetime import datetime
 from bson import ObjectId
 import uuid
 import asyncio
+import logging
+
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
@@ -132,33 +137,147 @@ async def delete_project(project_id: str, current_user: User = Depends(get_curre
     
     return {"message": "Project deleted successfully"}
 
-async def process_render_job(project_id: str, user_id: str):
-    """Background task to process render job with 15-second delay"""
+async def process_real_render_job(project_id: str, user_id: str):
+    """Background task to process render job using actual render engine"""
     try:
-        # Update status to rendering/processing
+        logger.info(f"Starting real render job for project {project_id}")
+        
+        # Update status to processing
         await project_collection.update_one(
             {"project_id": project_id},
             {
                 "$set": {
-                    "status": "rendering",  # Make sure this matches your frontend status check
+                    "status": ProjectStatus.PROCESSING,
                     "render_started_at": datetime.utcnow()
                 }
             }
         )
         
-        # Add 15-second delay to simulate rendering time
-        await asyncio.sleep(15)
+        # Get project data
+        project = await project_collection.find_one({"project_id": project_id})
+        if not project:
+            raise Exception("Project not found")
         
-        # For development, use mock render (this should be instant after the delay)
-        render_result = await RenderEngine.mock_render_job(project_id)
+        # Start render job with actual render engine
+        render_result = await RenderEngine.start_render_job({
+            "project_id": project_id,
+            "template_id": project["template_id"],
+            "parameters": project["parameters"],
+            "user_id": user_id
+        })
         
         if render_result["success"]:
-            # Update project with video URL and completion status
+            # Get the render job ID for polling
+            render_job_id = render_result.get("render_job_id")
+            
+            # Poll for completion (with timeout)
+            max_polls = 60  # 10 minutes with 10-second intervals
+            poll_interval = 10  # seconds
+            
+            for attempt in range(max_polls):
+                logger.info(f"Checking render completion, attempt {attempt + 1}/{max_polls}")
+                
+                completion_result = await RenderEngine.check_render_completion(render_job_id)
+                
+                if completion_result.get("completed"):
+                    if completion_result.get("success"):
+                        # Update project with completion data
+                        await project_collection.update_one(
+                            {"project_id": project_id},
+                            {
+                                "$set": {
+                                    "status": ProjectStatus.COMPLETED,
+                                    "video_url": completion_result.get("video_url"),
+                                    "thumbnail_url": completion_result.get("thumbnail_url"),
+                                    "duration_seconds": completion_result.get("duration_seconds"),
+                                    "file_size_mb": completion_result.get("file_size_mb"),
+                                    "render_completed_at": datetime.utcnow()
+                                }
+                            }
+                        )
+                        logger.info(f"Render job completed successfully for project {project_id}")
+                        return
+                    else:
+                        # Render failed
+                        await project_collection.update_one(
+                            {"project_id": project_id},
+                            {
+                                "$set": {
+                                    "status": ProjectStatus.FAILED,
+                                    "render_completed_at": datetime.utcnow()
+                                }
+                            }
+                        )
+                        logger.error(f"Render job failed for project {project_id}: {completion_result.get('error')}")
+                        return
+                
+                # Wait before next poll
+                await asyncio.sleep(poll_interval)
+            
+            # Timeout reached
             await project_collection.update_one(
                 {"project_id": project_id},
                 {
                     "$set": {
-                        "status": "completed",  # Make sure this matches your frontend status check
+                        "status": ProjectStatus.FAILED,
+                        "render_completed_at": datetime.utcnow()
+                    }
+                }
+            )
+            logger.error(f"Render job timed out for project {project_id}")
+            
+        else:
+            # Failed to start render job
+            await project_collection.update_one(
+                {"project_id": project_id},
+                {
+                    "$set": {
+                        "status": ProjectStatus.FAILED,
+                        "render_completed_at": datetime.utcnow()
+                    }
+                }
+            )
+            logger.error(f"Failed to start render job for project {project_id}: {render_result.get('error')}")
+    
+    except Exception as e:
+        # Mark as failed on exception
+        await project_collection.update_one(
+            {"project_id": project_id},
+            {
+                "$set": {
+                    "status": ProjectStatus.FAILED,
+                    "render_completed_at": datetime.utcnow()
+                }
+            }
+        )
+        logger.error(f"Exception in render job for project {project_id}: {str(e)}")
+
+async def process_mock_render_job(project_id: str, user_id: str):
+    """Background task for mock rendering (for testing)"""
+    try:
+        # Update status to processing
+        await project_collection.update_one(
+            {"project_id": project_id},
+            {
+                "$set": {
+                    "status": ProjectStatus.PROCESSING,
+                    "render_started_at": datetime.utcnow()
+                }
+            }
+        )
+        
+        # Add delay to simulate rendering
+        await asyncio.sleep(15)
+        
+        # Use mock render
+        render_result = await RenderEngine.mock_render_job(project_id)
+        
+        if render_result["success"]:
+            await project_collection.update_one(
+                {"project_id": project_id},
+                {
+                    "$set": {
+                        "status": ProjectStatus.COMPLETED,
                         "video_url": render_result["video_url"],
                         "thumbnail_url": render_result["thumbnail_url"],
                         "duration_seconds": render_result["duration_seconds"],
@@ -168,33 +287,33 @@ async def process_render_job(project_id: str, user_id: str):
                 }
             )
         else:
-            # Mark as failed
             await project_collection.update_one(
                 {"project_id": project_id},
                 {
                     "$set": {
-                        "status": "failed",
+                        "status": ProjectStatus.FAILED,
                         "render_completed_at": datetime.utcnow()
                     }
                 }
             )
     
     except Exception as e:
-        # Mark as failed on exception
         await project_collection.update_one(
             {"project_id": project_id},
             {
                 "$set": {
-                    "status": "failed",
+                    "status": ProjectStatus.FAILED,
                     "render_completed_at": datetime.utcnow()
                 }
             }
         )
+
 @router.post("/{project_id}/render", response_model=dict)
 async def render_project(
     project_id: str,
     background_tasks: BackgroundTasks,
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
+    use_real_render: bool = True  # Add query parameter to toggle between real and mock
 ):
     """Start rendering a project"""
     # Get project
@@ -209,19 +328,25 @@ async def render_project(
             detail="Project not found"
         )
     
-    if project["status"] == "rendering":  # Check for rendering status
+    if project["status"] == ProjectStatus.PROCESSING:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Project is already being processed"
         )
     
-    # Add render job to background tasks
-    background_tasks.add_task(process_render_job, project_id, current_user.username)
+    # Choose render method based on parameter
+    if use_real_render:
+        background_tasks.add_task(process_real_render_job, project_id, current_user.username)
+        message = "Real render job started"
+    else:
+        background_tasks.add_task(process_mock_render_job, project_id, current_user.username)
+        message = "Mock render job started"
     
     return {
-        "message": "Render job started",
+        "message": message,
         "project_id": project_id,
-        "status": "rendering"  # Return rendering status
+        "status": ProjectStatus.PROCESSING,
+        "estimated_completion": "2-3 minutes" if use_real_render else "15 seconds"
     }
 
 @router.get("/{project_id}/status", response_model=dict)
@@ -242,6 +367,7 @@ async def get_render_status(project_id: str, current_user: User = Depends(get_cu
         "project_id": project_id,
         "status": project["status"],
         "video_url": project.get("video_url"),
+        "thumbnail_url": project.get("thumbnail_url"),
         "render_started_at": project.get("render_started_at"),
         "render_completed_at": project.get("render_completed_at"),
         "duration_seconds": project.get("duration_seconds"),
@@ -250,7 +376,7 @@ async def get_render_status(project_id: str, current_user: User = Depends(get_cu
 
 @router.post("/render-callback/{project_id}")
 async def render_callback(project_id: str, callback_data: dict):
-    """Callback endpoint for render engine to report completion"""
+    """Callback endpoint for render engine to report completion (optional)"""
     try:
         if callback_data.get("success"):
             await project_collection.update_one(
